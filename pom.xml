@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>MavenResolvingProblem</groupId>
+	<artifactId>MavenResolvingProblem</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>Intellij Maven importer error problem</name>
+	<description>
+		A build path that is defined by a variable that is set by a profile...
+		will import properly but when switching profiles the config gets messed up.
+
+		Import this project in Intellij 13 (or 13.1 any EAP) and change the profile after the initial import.
+		you will see that the build path will accumulate overlays event though only one should be active per profile!
+
+		From the commandline you can test this works by issuing:
+		>> mvn clean install -Ptest &amp;&amp; cat target/classes/test
+		This should end with a line echoing test. If you choose another profile it should be reflected.
+
+		In in intellij changing profiles and checking the Project Structure shows that deselecting a profile
+		does not remove the corresponding profile from the classpath
+	</description>
+
+	<profiles>
+		<profile>
+			<id>dev</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<profileselected>dev</profileselected>
+			</properties>
+		</profile>
+		<profile>
+			<id>test</id>
+			<properties>
+				<profileselected>test</profileselected>
+			</properties>
+		</profile>
+		<profile>
+			<id>acc</id>
+			<properties>
+				<profileselected>acc</profileselected>
+			</properties>
+		</profile>
+	</profiles>
+
+	<build>
+		<resources>
+			<!-- By defining this directory last it overrides files from the resource directory -->
+			<resource>
+				<directory>src/main/overlay/${profileselected}</directory>
+				<filtering>false</filtering>
+			</resource>
+		</resources>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-enforcer-plugin</artifactId>
+					<version>1.3.1</version>
+					<configuration>
+						<detail>true</detail>
+						<rules>
+							<requireProperty>
+								<property>profileselected</property>
+								<message>You have to select a profile (-Pxxx)!!</message>
+								<regex>\w{3,}</regex>
+								<regexMessage>The profile name should be be at least 3 characters!</regexMessage>
+							</requireProperty>
+						</rules>
+					</configuration>
+					<executions>
+						<execution>
+							<inherited>true</inherited>
+							<goals>
+								<goal>enforce</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>
+
+
